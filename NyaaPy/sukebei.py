@@ -1,5 +1,6 @@
 import requests
 from NyaaPy import utils
+from NyaaPy import torrent
 
 
 class SukebeiNyaa:
@@ -9,22 +10,28 @@ class SukebeiNyaa:
 
     def search(self, keyword, **kwargs):
         uri = self.SITE.value
+        user = kwargs.get('user', None)
         category = kwargs.get('category', 0)
         subcategory = kwargs.get('subcategory', 0)
         filters = kwargs.get('filters', 0)
         page = kwargs.get('page', 0)
+        sorting = kwargs.get('sort', 'id')  # Sorting by id = sorting by date, this is the default.
+        order = kwargs.get('order', 'desc')
+
+        user_uri = f"user/{user}" if user else ""
 
         if page > 0:
-            r = requests.get("{}/?f={}&c={}_{}&q={}&p={}".format(
-                uri, filters, category, subcategory,
-                keyword, page))
+            r = requests.get("{}/{}?f={}&c={}_{}&q={}&p={}&s={}&o={}".format(
+                uri, user_uri, filters, category, subcategory,
+                keyword, page, sorting, order))
         else:
-            r = requests.get("{}/?f={}&c={}_{}&q={}".format(
-                uri, filters, category, subcategory,
-                keyword))
+            r = requests.get("{}/{}?f={}&c={}_{}&q={}&s={}&o={}".format(
+                uri, user_uri, filters, category, subcategory,
+                keyword, sorting, order))
 
         r.raise_for_status()
-        return utils.parse_nyaa(r.text, limit=None, site=self.SITE)
+        json_data = utils.parse_nyaa(r.text, limit=None, site=self.SITE)
+        return torrent.json_to_class(json_data)
 
     def get(self, id):
         r = requests.get("{}/view/{}".format(self.SITE.value, id))
@@ -42,11 +49,12 @@ class SukebeiNyaa:
         r = requests.get(self.SITE.value)
         r.raise_for_status()
 
-        return utils.parse_nyaa(
+        json_data = utils.parse_nyaa(
             r.text,
             limit=number_of_results + 1,
             site=self.SITE
         )
+        return torrent.json_to_class(json_data)
 
 
 class SukebeiPantsu:
