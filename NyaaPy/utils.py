@@ -214,9 +214,8 @@ def parse_single(request_text, site):
 
     # Find files, we need only text of the li element(s).
     # Sorry about Pycodestyle aka PEP8 (E501) error
-    for el in tree.xpath("//div[contains(@class, 'torrent-file-list')]//li/text()"):
-        if el.rstrip():
-            torrent_files.append(el)
+    for el in tree.xpath("//div[contains(@class, 'torrent-file-list')]/ul/li"):
+        torrent_files.extend(parse_file_list(el, []))
 
     torrent['title'] = \
         tree.xpath("//h3[@class='panel-title']/text()")[0].strip()
@@ -237,6 +236,31 @@ def parse_single(request_text, site):
         torrent['description'] += s.text
 
     return torrent
+
+
+def parse_file_list(elem: etree.Element, files: list):
+    children = elem.getchildren()
+    # unknown format
+    if len(children) != 2:
+        return files
+    # if it's a file
+    if children[0].tag == 'i' and children[1].tag == 'span':
+        file_name = elem.xpath('./text()')[0].strip()
+        file_size = children[1].xpath('./text()')[0]
+        file_size = file_size.replace('(', '').replace(')', '')
+        files.append((file_name, file_size))
+        return files
+    # if it's a folder
+    if children[0].tag == 'a' and children[1].tag == 'ul':
+        folder_name = children[0].xpath('./text()')[0].strip()
+        folder_contents = []
+        for child in children[1].getchildren():
+            folder_contents = parse_file_list(child, folder_contents)
+        files.append((folder_name, folder_contents))
+        return files
+    print("Unknown format")
+    return files
+        
 
 
 def sukebei_categories(b):
