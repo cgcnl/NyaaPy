@@ -37,13 +37,15 @@ class SukebeiNyaa:
         r = requests.get("{}/view/{}".format(self.SITE.value, id))
         r.raise_for_status()
 
-        return utils.parse_single(r.text, self.SITE)
+        json_data = utils.parse_single(r.text, self.SITE)
+        return torrent.json_to_class(json_data)
 
     def get_user(self, username):
         r = requests.get("{}/user/{}".format(self.SITE.value, username))
         r.raise_for_status()
 
-        return utils.parse_nyaa(r.text, limit=None, site=self.SITE)
+        json_data = utils.parse_nyaa(r.text, limit=None, site=self.SITE)
+        return torrent.json_to_class(json_data)
 
     def last_uploads(self, number_of_results):
         r = requests.get(self.SITE.value)
